@@ -1,13 +1,22 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    id("com.android.library") version "8.13.2"
-    id("org.jetbrains.kotlin.android") version "2.2.21"
+    // 版本由宿主工程的根 build.gradle.kts（或独立构建时的 settings.gradle.kts pluginManagement）提供
+    id("com.android.library")
+    // 宿主工程用 AGP 9 内置 Kotlin，KGP 只登记版本不应用；独立构建时在下面手动应用。
+    id("org.jetbrains.kotlin.android") apply false
+}
+
+// 独立构建（AGP 8.x，没有内置 Kotlin）时才自己应用 KGP。
+if (extensions.findByName("kotlin") == null) {
+    apply(plugin = "org.jetbrains.kotlin.android")
 }
 
 android {
     namespace = "com.bhh.tools"
-    compileSdk = 37
+    // 与宿主 App 保持一致：本树 SDK 是 API 36.1（AGP 8.13.2 / 9.3.3 都支持 compileSdkMinor）
+    compileSdk = 36
+    compileSdkMinor = 1
 
     defaultConfig {
         minSdk = 29
@@ -31,7 +40,9 @@ android {
     }
 }
 
-kotlin {
+// 不用 `kotlin { }` 类型安全访问器：宿主工程里 KGP 是由 AGP 内置 Kotlin 注册的，
+// 只有独立构建才由脚本主动 apply，访问器不会生成。按类型取扩展两种场景都能用。
+extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension>("kotlin") {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
     }
